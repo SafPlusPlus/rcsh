@@ -17,12 +17,14 @@ rcsh
      :target: https://pyup.io/repos/github/SafPlusPlus/rcsh/
      :alt: Updates
 
+.. image:: https://codecov.io/gh/SafPlusPlus/rcsh/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/SafPlusPlus/rcsh
 
 Non-interactive command whitelisted shell
 
 
 * Free software: BSD license
-* Documentation: https://rcsh.readthedocs.io.
+* Documentation: https://rcsh.readthedocs.io. (no documentation yet, please stand by...)
 
 
 Features
