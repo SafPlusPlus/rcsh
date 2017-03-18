@@ -23,7 +23,7 @@ rcsh
 Non-interactive command whitelisted shell
 
 This is a work-in-progress little script intended to be used as a shell for Linux user accounts which are allowed to run
-a limited set of commands over SSH non-interactively and nothing else. The command which are allowed are based on a
+a limited set of commands over SSH non-interactively and nothing else. The commands which are allowed are based on a
 whitelist of exact command invocation strings and/or a list of regular expressions which they should match.
 
 
