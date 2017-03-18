@@ -28,7 +28,7 @@ whitelist of exact command invocation strings and/or a list of regular expressio
 
 
 * Free software: BSD license
-* Documentation: https://rcsh.readthedocs.io. (no documentation yet, please stand by...)
+* Documentation: https://rcsh.readthedocs.io. (not much documentation yet, please stand by...)
 
 
 Features
@@ -39,6 +39,12 @@ Features
 
 Credits
 ---------
+
+This package was inspired by lshell and bdsh:
+
+* https://github.com/ghantoos/lshell
+* https://raymii.org/s/software/bdsh.html
+* https://github.com/RaymiiOrg/boa-diminish-restricted-shell/
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
