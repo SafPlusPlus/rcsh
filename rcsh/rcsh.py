@@ -12,59 +12,76 @@ Inspired by lshell and bdsh:
 import os, sys, getpass, re, shlex, syslog, traceback, subprocess, select, time
 from pprint import pprint
 from glob import glob
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 DEFAULT_CONF_FILE = '/etc/rcsh'
 DEFAULT_FILTER_DIR = '/etc/rcsh.d'
+DEFAULT_TIMEOUT = 30 # seconds # not implemented
 
 log_stdin = False
 log_stdout = False
 log_stderr = False
-max_duration = 30 # seconds # not implemented
 
 def setup_logging():
     syslog.openlog('rcsh', syslog.LOG_PID, syslog.LOG_AUTH)
 
-# log to syslog
-# get config from conf.d dir
-# allow overrides to get config from a diff dir by looking at something like /etc/rcsh
-
-
-# print('printing some interesting info...')
-# print('environment:')
-# pprint(os.environ)
-# print('argv:')
-# print(sys.argv)
-
-# limit possible commands to fixed strings of regexps
-# log invocation
-# log stdin, stdout, stderr (though perhaps compressed and public key encrypted, or perhap "all" channels)
-
-def get_configuration(configuration_file=DEFAULT_CONF_FILE, filter_dir=DEFAULT_FILTER_DIR):
+def get_configuration(configuration_file=DEFAULT_CONF_FILE):
     """
     """
-    pass
+    config = configparser.ConfigParser({
+        'ConfigDir': DEFAULT_FILTER_DIR,
+        'Timeout': DEFAULT_TIMEOUT,
+    })
+    config.read(configuration_file)
+    return config
 
-def load_whitelists(username, config_dir=DEFAULT_FILTER_DIR):
+def load_whitelists(username, filter_dir=DEFAULT_FILTER_DIR):
     """
     """
     exact_allowed = []
-    # print(os.path.join(config_dir, '%s.exact*' % username))
-    for fn in glob(os.path.join(config_dir, '%s.exact*' % username)):
+    # print(os.path.join(filter_dir, '%s.exact*' % username))
+    for fn in glob(os.path.join(filter_dir, '%s.exact*' % username)):
         print(fn)
         with open(fn, 'r') as f:
             exact_allowed += [c.strip() for c in f.readlines() if not c.strip().startswith('#')]
 
     regex_allowed = []
-    for fn in glob(os.path.join(config_dir, '%s.regex*' % username)):
+    for fn in glob(os.path.join(filter_dir, '%s.regex*' % username)):
         with open(fn, 'r') as f:
-            regex_allowed += [c.strip() for c in f.readlines() if not c.strip().startswith('#')]
+            for c in f.readlines():
+                c = c.strip()
+                if c.startswith('#'):
+                    # it's a comment, so skip it
+                    continue
+                if not (c.startswith('^') and c.endswith('$')):
+                    # open ended regular expressions are too risky, there for not allowed
+                    syslog.syslog('Skipping "%s" as a valid regex since it does not start with "^" and end with "$"' % c)
+                    continue
+                regex_allowed.append(c)
 
     return exact_allowed, regex_allowed
 
-def invoke(command_requested, timeout=5):
+def is_invocation_allowed(command_requested, exact_allowed=[], regex_allowed=[]):
     """
+        Check if command_requested is an element of exact_allowed or if it
+        matches a pattern in regex_allowed. If so, then return True.
     """
+    allowed = False
+    if command_requested in exact_allowed:
+        allowed = True
+    else:
+        for regexp in regex_allowed:
+            if re.match(regexp, command_requested):
+                allowed = True
+                break
+    return allowed
 
+def invoke(command_requested, timeout=DEFAULT_TIMEOUT):
+    """
+    """
     p = subprocess.Popen(command_requested, shell=True, stdin=subprocess.PIPE, stdout=None, stderr=None)
     p.stdin.close() # since we do not allow invoked processes to listen to stdin, we close stdin to the subprocess
     try:
@@ -123,7 +140,10 @@ def invoke(command_requested, timeout=5):
     #     if e.errno != 11:
     #         raise
 
-
+    # We are also interested in data sent to stdin. This isn't allowed, and may 
+    # be interesting for forensics
+    # Beware, this code is a bit iffy. In fact, reading from stdin seems iffy
+    # to me.
     if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         stdin_lines = sys.stdin.readline()
     else:
@@ -144,45 +164,17 @@ def invoke(command_requested, timeout=5):
 
     return return_code, stdin_lines
 
-def invoke33(command_requested, timeout=600):
-    """
-        invoke using python 3.3+ facilities, like waiting with a timeout.
-    """
-
-
-
-    # execute command, while logging interaction
-    p = subprocess.Popen(command_requested, shell=True, stdin=subprocess.PIPE, stdout=None, stderr=None)
-    p.stdin.close() # since we do not allow invoked processes to listen to stdin, we close stdin to the subprocess
+def main():
     try:
-        return_code = p.wait(timeout)
-    except TimeoutExpired:
-        # log timeout
-        return -1, []
+        setup_logging()
+        config = get_configuration()
 
-    # check if data was given on stdin
-    # # check if data was given on stdin
-    # if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-    #     syslog.syslog('Invocation for "%s" from %s attempted to pass data over stdin: %s' % (username, source_ip, repr(sys.stdin.readlines())))
-
-    stdin_lines = []
-    for line in sys.stdin.readlines():
-        if not line:
-            break
-        stdin_lines.append(line)
-
-    return return_code, stdin_lines
-
-
-
-if __name__ == "__main__":
-    setup_logging()
-    try:
         username = getpass.getuser()
         if 'SSH_CLIENT' in os.environ:
             source_ip = os.environ['SSH_CLIENT'].split()[0]
         else:
             source_ip = 'unknown source ip'
+
         if len(sys.argv) <= 1:
             # not called with an argument
             print('Interactive login not permitted.')
@@ -194,28 +186,21 @@ if __name__ == "__main__":
             command_requested = sys.argv[2]
             # print('You attempted to invoke "%s"' % command_requested)
 
-            exact_allowed, regex_allowed, = load_whitelists(username)
+            timeout = config.getint('DEFAULT', 'timout')
+            filter_dir = config.get('DEFAULT', 'filter_dir')
 
-            allowed = False
-            if command_requested in exact_allowed:
-                allowed = True
-            else:
-                # check against every regexp
-                for regexp in regex_allowed:
-                    if re.match(regexp, command_requested):
-                        allowed = True
-                        break
+            exact_allowed, regex_allowed, = load_whitelists(username, filter_dir)
+
+            allowed = is_invocation_allowed(command_requested, exact_allowed, regex_allowed)
+
             if not allowed:
-                # print('This is not allowed, invoke something like:')
-                # pprint(exact_allowed)
-                # pprint(regex_allowed)
                 syslog.syslog('Invocation not allowed for "%s" from %s: %s' % (username, source_ip, command_requested))
                 sys.exit(1)
 
             # print('This would have been allowed.')
             syslog.syslog('Invocation allowed for "%s" from %s: %s' % (username, source_ip, command_requested))
 
-            return_code, stdin_lines = invoke(command_requested)
+            return_code, stdin_lines = invoke(command_requested, timeout)
 
             if stdin_lines:
                 syslog.syslog('Invocation for "%s" from %s attempted to pass data over stdin: %s' % (username, source_ip, repr(stdin_lines)))
@@ -239,4 +224,7 @@ if __name__ == "__main__":
         syslog.syslog('Unexpected error occured during invocation by "%s" from %s:\n%s' % (username, source_ip, traceback.format_exc()))
         # print(etype, evalue, etb)
         sys.exit(1)
+
+if __name__ == "__main__":
+    main()
 

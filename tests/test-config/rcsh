@@ -1,0 +1,3 @@
+[DEFAULT]
+timeout = 30
+filter_dir = /etc/rcsh.d
