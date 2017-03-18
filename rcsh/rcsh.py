@@ -20,10 +20,9 @@ except ImportError:
 DEFAULT_CONF_FILE = '/etc/rcsh'
 DEFAULT_FILTER_DIR = '/etc/rcsh.d'
 DEFAULT_TIMEOUT = 30 # seconds # not implemented
-
-log_stdin = False
-log_stdout = False
-log_stderr = False
+DEFAULT_LOG_STDIN = True  # not implemented
+DEFAULT_LOG_STDOUT = True  # not implemented
+DEFAULT_LOG_STDERR = True  # not implemented
 
 def setup_logging():
     syslog.openlog('rcsh', syslog.LOG_PID, syslog.LOG_AUTH)
@@ -97,49 +96,6 @@ def invoke(command_requested, timeout=DEFAULT_TIMEOUT):
         return_code = -1
         syslog.syslog('Invocation timed out')
 
-
-
-    # check if data was given on stdin
-    # # check if data was given on stdin
-    # if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-    #     syslog.syslog('Invocation for "%s" from %s attempted to pass data over stdin: %s' % (username, source_ip, repr(sys.stdin.readlines())))
-
-    # stdin_lines = []
-    # for line in sys.stdin.readlines():
-    #     stdin_lines.append(line)
-
-    # check if data was given on stdin
-    # only reads one line if it exists
-    # ideally we would read all lines up to now, but that seems troublesome ...
-    # ... as in readlines block until stdin is closed remotely, not timeout parameter possible
-    # ... so we have to use a daemon thread probably to fetch lines from 
-    # if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-    #     stdin_lines = [sys.stdin.readline()]
-    # else:
-    #     stdin_lines = []
-
-    # import fcntl
-    # fd = sys.stdin.fileno()
-    # fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-    # fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-
-
-
-    # stdin_lines = []
-    # try:
-    #     # for _ in range(100): # read max 100 times
-    #     #     stdin_lines.append(sys.stdin.read())
-    #     stdin_lines = sys.stdin.read()
-    # except IOError as e:
-    #     # sort of an EOF signal, seems readline raises a 
-    #     # IOError: [Errno 11] Resource temporarily unavailable 
-    #     # if there is data to read
-    #     # etype, evalue, etb = sys.exc_info()
-    #     print(e, dir(e))
-    #     # pass if it's indeed this specific exception, otherwise reraise
-    #     if e.errno != 11:
-    #         raise
-
     # We are also interested in data sent to stdin. This isn't allowed, and may 
     # be interesting for forensics
     # Beware, this code is a bit iffy. In fact, reading from stdin seems iffy
@@ -148,19 +104,6 @@ def invoke(command_requested, timeout=DEFAULT_TIMEOUT):
         stdin_lines = sys.stdin.readline()
     else:
         stdin_lines = []
-
-    # stdin_lines = []
-    # start = time.time()
-    # while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-    #     if (time.time() - start) > 5.0:
-    #         break
-    #     line = sys.stdin.readline()
-    #     print(line,)
-    #     if line:
-    #         stdin_lines.append(line)
-    #     else: # an empty line means stdin has been closed
-    #         break
-    #     time.sleep(0.1)
 
     return return_code, stdin_lines
 
