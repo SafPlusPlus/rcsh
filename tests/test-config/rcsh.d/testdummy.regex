@@ -1,0 +1,2 @@
+# regular expressions for whilelisted commands for testdummy
+^ls(?: -[lahtr]+)?$
