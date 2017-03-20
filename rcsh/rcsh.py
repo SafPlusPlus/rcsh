@@ -90,8 +90,10 @@ def invoke(command_requested, timeout=DEFAULT_TIMEOUT):
         start = time.time()
         while p.poll() is None and (time.time() - start) < timeout:
             time.sleep(0.1) # nicer than a pass, which would cause a lot of CPU usage
-        return_code = -1
-        syslog.syslog('Invocation timed out')
+        return_code = p.poll()
+        if return_code is None:
+            return_code = -1
+            syslog.syslog('Invocation timed out1')
     except subprocess.TimeoutExpired: # works on python < 3.3 because a known exception is caught first
         return_code = -1
         syslog.syslog('Invocation timed out')
