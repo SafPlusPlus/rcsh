@@ -13,3 +13,8 @@ History
 * An actually functional release on PyPI.
 * Some unittesting
 * Some documentation
+
+0.2.1 (2017-03-20)
+------------------
+
+* Fixed typo in configuration option
