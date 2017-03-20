@@ -18,3 +18,8 @@ History
 ------------------
 
 * Fixed typo in configuration option
+
+0.2.2 (2017-03-20)
+------------------
+
+* Removed redundant print statement
