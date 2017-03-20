@@ -19,7 +19,7 @@ test_requirements = [
 
 setup(
     name='rcsh',
-    version='0.2.0',
+    version='0.2.1',
     description="Non-interactive command whitelisted shell",
     long_description=readme + '\n\n' + history,
     author="Freark van der Bos",
