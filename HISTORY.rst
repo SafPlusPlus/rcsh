@@ -23,3 +23,8 @@ History
 ------------------
 
 * Removed redundant print statement
+
+0.2.3 (2017-03-20)
+------------------
+
+* Fixed some python2 timeout logic bug
