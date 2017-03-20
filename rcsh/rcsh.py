@@ -129,7 +129,7 @@ def main():
             command_requested = sys.argv[2]
             # print('You attempted to invoke "%s"' % command_requested)
 
-            timeout = config.getint('DEFAULT', 'timout')
+            timeout = config.getint('DEFAULT', 'timeout')
             filter_dir = config.get('DEFAULT', 'filter_dir')
 
             exact_allowed, regex_allowed, = load_whitelists(username, filter_dir)
