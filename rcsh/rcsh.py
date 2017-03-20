@@ -43,7 +43,7 @@ def load_whitelists(username, filter_dir=DEFAULT_FILTER_DIR):
     exact_allowed = []
     # print(os.path.join(filter_dir, '%s.exact*' % username))
     for fn in glob(os.path.join(filter_dir, '%s.exact*' % username)):
-        print(fn)
+        # print(fn)
         with open(fn, 'r') as f:
             exact_allowed += [c.strip() for c in f.readlines() if not c.strip().startswith('#')]
 
